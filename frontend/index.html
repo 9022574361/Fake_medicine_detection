@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediVerify AI — Fake Medicine Scanner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="18" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M20 10 L20 30 M10 20 L30 20" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="4" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-main">MediVerify</span>
+        <span class="logo-sub">AI — v2.4.1</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="scanner">Scanner</button>
+      <button class="nav-btn" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="history">History</button>
+      <button class="nav-btn" data-view="blockchain">Blockchain</button>
+    </nav>
+    <div class="status-bar">
+      <div class="status-dot pulse"></div>
+      <span>API Connected</span>
+      <div class="backend-status" id="backendStatus">
+        <span class="status-indicator" id="apiStatus">● LIVE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ══════════ SCANNER VIEW ══════════ -->
+    <section class="view active" id="view-scanner">
+      <div class="scanner-layout">
+
+        <!-- Left: Camera Panel -->
+        <div class="camera-panel">
+          <div class="panel-label">SCAN INTERFACE</div>
+          <div class="camera-wrapper" id="cameraWrapper">
+            <video id="videoFeed" autoplay playsinline muted></video>
+            <canvas id="overlayCanvas"></canvas>
+
+            <!-- Scanner Frame Animation -->
+            <div class="scan-frame">
+              <div class="corner tl"></div>
+              <div class="corner tr"></div>
+              <div class="corner bl"></div>
+              <div class="corner br"></div>
+              <div class="scan-line" id="scanLine"></div>
+              <div class="scan-reticle" id="scanReticle"></div>
+            </div>
+
+            <!-- Camera Offline State -->
+            <div class="camera-offline" id="cameraOffline">
+              <div class="offline-icon">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="28" stroke="var(--text-dim)" stroke-width="2" stroke-dasharray="4 4"/>
+                  <path d="M20 32 L28 24 L36 32 L28 40 Z" stroke="var(--text-dim)" stroke-width="2" fill="none"/>
+                  <circle cx="40" cy="24" r="3" fill="var(--text-dim)"/>
+                </svg>
+              </div>
+              <p>Camera not active</p>
+              <button class="btn-primary" id="startCameraBtn">Enable Camera</button>
+              <button class="btn-secondary" id="uploadDemoBtn">Upload Image</button>
+            </div>
+
+            <!-- Live Badge -->
+            <div class="live-badge" id="liveBadge" style="display:none">
+              <span class="live-dot"></span> LIVE
+            </div>
+
+            <!-- AI Detection Boxes -->
+            <div id="detectionBoxes"></div>
+          </div>
+
+          <!-- Camera Controls -->
+          <div class="camera-controls">
+            <button class="ctrl-btn" id="flipCameraBtn" title="Flip Camera">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+              </svg>
+            </button>
+            <button class="ctrl-btn capture-btn" id="captureBtn" disabled>
+              <div class="capture-ring"></div>
+              <div class="capture-dot"></div>
+            </button>
+            <button class="ctrl-btn" id="uploadBtn" title="Upload Image">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </button>
+            <input type="file" id="fileInput" accept="image/*" style="display:none" />
+          </div>
+
+          <!-- OCR Live Feed -->
+          <div class="ocr-feed" id="ocrFeed">
+            <div class="ocr-label">OCR EXTRACTION</div>
+            <div class="ocr-content" id="ocrContent">
+              <span class="ocr-placeholder">Scan a medicine to extract text...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Analysis Panel -->
+        <div class="analysis-panel">
+
+          <!-- Analyzing State -->
+          <div class="analyzing-state" id="analyzingState" style="display:none">
+            <div class="ai-brain">
+              <div class="brain-ring ring1"></div>
+              <div class="brain-ring ring2"></div>
+              <div class="brain-ring ring3"></div>
+              <div class="brain-core">AI</div>
+            </div>
+            <p class="analyzing-text">Analyzing medicine...</p>
+            <div class="analysis-steps" id="analysisSteps">
+              <div class="step" id="step1">
+                <div class="step-icon">○</div>
+                <span>Preprocessing image</span>
+              </div>
+              <div class="step" id="step2">
+                <div class="step-icon">○</div>
+                <span>YOLOv8 detection</span>
+              </div>
+              <div class="step" id="step3">
+                <div class="step-icon">○</div>
+                <span>CNN classification</span>
+              </div>
+              <div class="step" id="step4">
+                <div class="step-icon">○</div>
+                <span>OCR text extraction</span>
+              </div>
+              <div class="step" id="step5">
+                <div class="step-icon">○</div>
+                <span>XGBoost fraud model</span>
+              </div>
+              <div class="step" id="step6">
+                <div class="step-icon">○</div>
+                <span>Blockchain verification</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Idle State -->
+          <div class="idle-state" id="idleState">
+            <div class="idle-graphic">
+              <div class="pill-icon">
+                <div class="pill-half left"></div>
+                <div class="pill-half right"></div>
+              </div>
+            </div>
+            <h2>Medicine Scanner Ready</h2>
+            <p>Point camera at a medicine package or pill bottle, then press capture to begin AI analysis.</p>
+            <div class="feature-chips">
+              <span class="chip">YOLOv8</span>
+              <span class="chip">CNN</span>
+              <span class="chip">OCR</span>
+              <span class="chip">XGBoost</span>
+              <span class="chip">Blockchain</span>
+            </div>
+          </div>
+
+          <!-- Result State -->
+          <div class="result-state" id="resultState" style="display:none">
+
+            <!-- Risk Score Gauge -->
+            <div class="risk-gauge-container">
+              <div class="risk-label-top">AUTHENTICITY SCORE</div>
+              <div class="risk-gauge" id="riskGauge">
+                <svg viewBox="0 0 200 120" class="gauge-svg">
+                  <defs>
+                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#00ff88"/>
+                      <stop offset="50%" style="stop-color:#ffaa00"/>
+                      <stop offset="100%" style="stop-color:#ff3366"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="12" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251" id="gaugeFill"/>
+                  <line x1="100" y1="100" x2="100" y2="30" stroke="white" stroke-width="2" stroke-linecap="round" id="gaugeNeedle" transform-origin="100 100"/>
+                  <circle cx="100" cy="100" r="6" fill="white"/>
+                </svg>
+                <div class="gauge-value" id="gaugeValue">--</div>
+                <div class="gauge-status" id="gaugeStatus">SCANNING</div>
+              </div>
+            </div>
+
+            <!-- Result Cards -->
+            <div class="result-cards">
+              <div class="result-card" id="cardVerdict">
+                <div class="card-label">VERDICT</div>
+                <div class="card-value verdict-value" id="verdictValue">—</div>
+              </div>
+              <div class="result-card">
+                <div class="card-label">FAKE PROBABILITY</div>
+                <div class="card-value" id="fakeProbValue">—</div>
+              </div>
+              <div class="result-card">
+                <div class="card-label">CONFIDENCE</div>
+                <div class="card-value" id="confidenceValue">—</div>
+              </div>
+              <div class="result-card">
+                <div class="card-label">BLOCKCHAIN</div>
+                <div class="card-value" id="blockchainValue">—</div>
+              </div>
+            </div>
+
+            <!-- Model Breakdown -->
+            <div class="model-breakdown">
+              <div class="breakdown-label">MODEL ENSEMBLE BREAKDOWN</div>
+              <div class="breakdown-bars">
+                <div class="bar-row">
+                  <span>YOLOv8</span>
+                  <div class="bar-track"><div class="bar-fill" id="bar-yolo"></div></div>
+                  <span id="val-yolo">—</span>
+                </div>
+                <div class="bar-row">
+                  <span>CNN</span>
+                  <div class="bar-track"><div class="bar-fill" id="bar-cnn"></div></div>
+                  <span id="val-cnn">—</span>
+                </div>
+                <div class="bar-row">
+                  <span>XGBoost</span>
+                  <div class="bar-track"><div class="bar-fill" id="bar-xgb"></div></div>
+                  <span id="val-xgb">—</span>
+                </div>
+                <div class="bar-row">
+                  <span>OCR Match</span>
+                  <div class="bar-track"><div class="bar-fill" id="bar-ocr"></div></div>
+                  <span id="val-ocr">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Extracted Medicine Info -->
+            <div class="medicine-info" id="medicineInfo">
+              <div class="info-label">DETECTED MEDICINE</div>
+              <div class="info-grid" id="infoGrid"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="result-actions">
+              <button class="btn-primary" id="rescanBtn">Scan Again</button>
+              <button class="btn-secondary" id="reportBtn">Save Report</button>
+              <button class="btn-ghost" id="blockchainBtn">Verify Blockchain</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ DASHBOARD VIEW ══════════ -->
+    <section class="view" id="view-dashboard">
+      <div class="dashboard-layout">
+        <div class="dash-header">
+          <h1>Analytics Dashboard</h1>
+          <div class="dash-period">Last 30 Days</div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-icon green">✓</div>
+            <div class="stat-body">
+              <div class="stat-num" id="statTotal">0</div>
+              <div class="stat-label">Total Scans</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">⚠</div>
+            <div class="stat-body">
+              <div class="stat-num" id="statFakes">0</div>
+              <div class="stat-label">Fakes Detected</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">◈</div>
+            <div class="stat-body">
+              <div class="stat-num" id="statAccuracy">98.4%</div>
+              <div class="stat-label">Model Accuracy</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">⬡</div>
+            <div class="stat-body">
+              <div class="stat-num" id="statVerified">0</div>
+              <div class="stat-label">Blockchain Verified</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-title">Scan Activity (7 Days)</div>
+            <canvas id="activityChart" width="400" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Detection Distribution</div>
+            <canvas id="pieChart" width="300" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="heatmap-card">
+          <div class="chart-title">Fraud Detection Heatmap — Suspicious Zones</div>
+          <div class="heatmap-container" id="heatmapContainer">
+            <canvas id="heatmapCanvas" width="800" height="300"></canvas>
+            <div class="heatmap-legend">
+              <div class="legend-item"><div class="legend-color low"></div> Low Risk</div>
+              <div class="legend-item"><div class="legend-color med"></div> Medium Risk</div>
+              <div class="legend-item"><div class="legend-color high"></div> High Risk</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medicine Risk Table -->
+        <div class="table-card">
+          <div class="chart-title">Medicine Risk Database</div>
+          <table class="risk-table">
+            <thead>
+              <tr><th>Medicine Name</th><th>Batch ID</th><th>Risk Level</th><th>Fake Rate</th><th>Status</th></tr>
+            </thead>
+            <tbody id="riskTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ HISTORY VIEW ══════════ -->
+    <section class="view" id="view-history">
+      <div class="history-layout">
+        <div class="history-header">
+          <h1>Scan History</h1>
+          <div class="history-controls">
+            <input type="text" class="search-input" id="historySearch" placeholder="Search medicine name..." />
+            <select class="filter-select" id="historyFilter">
+              <option value="all">All Results</option>
+              <option value="fake">Fake Only</option>
+              <option value="genuine">Genuine Only</option>
+            </select>
+            <button class="btn-ghost" id="clearHistoryBtn">Clear All</button>
+          </div>
+        </div>
+        <div class="history-grid" id="historyGrid">
+          <div class="history-empty" id="historyEmpty">
+            <p>No scans yet. Start scanning medicines to build history.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ BLOCKCHAIN VIEW ══════════ -->
+    <section class="view" id="view-blockchain">
+      <div class="blockchain-layout">
+        <div class="bc-header">
+          <h1>Blockchain Verification</h1>
+          <div class="bc-badge">Simulated Smart Contract</div>
+        </div>
+
+        <div class="bc-verify-panel">
+          <div class="bc-input-group">
+            <label>Medicine Batch Hash</label>
+            <div class="bc-input-row">
+              <input type="text" id="hashInput" class="bc-input" placeholder="Enter batch hash or scan medicine..." />
+              <button class="btn-primary" id="verifyHashBtn">Verify</button>
+              <button class="btn-ghost" id="generateHashBtn">Generate Demo</button>
+            </div>
+          </div>
+          <div class="bc-result" id="bcResult" style="display:none"></div>
+        </div>
+
+        <!-- Blockchain Visualization -->
+        <div class="blockchain-visual">
+          <div class="bc-chain" id="bcChain"></div>
+        </div>
+
+        <!-- Recent Verifications -->
+        <div class="bc-table-card">
+          <div class="chart-title">Recent Blockchain Verifications</div>
+          <table class="risk-table">
+            <thead>
+              <tr><th>Timestamp</th><th>Hash</th><th>Medicine</th><th>Manufacturer</th><th>Status</th></tr>
+            </thead>
+            <tbody id="bcTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Image Preview Modal -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <span>Preview & Confirm</span>
+        <button id="modalClose">✕</button>
+      </div>
+      <img id="modalImage" src="" alt="Preview" />
+      <div class="modal-actions">
+        <button class="btn-primary" id="modalAnalyze">Analyze This Image</button>
+        <button class="btn-ghost" id="modalCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medicine Scanner</title>
+</head>
+<body>

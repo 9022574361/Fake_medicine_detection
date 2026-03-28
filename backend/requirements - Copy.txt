@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════
+# MediVerify AI — Backend Requirements
+# ═══════════════════════════════════════════
+
+# ─── Core API ───────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+pydantic==2.7.0
+
+# ─── Database ───────────────────────────────
+aiosqlite==0.20.0
+
+# ─── Computer Vision ────────────────────────
+opencv-python-headless==4.10.0.84
+Pillow==10.3.0
+numpy==1.26.4
+
+# ─── AI / ML Models ─────────────────────────
+# YOLOv8 (uncomment for real detection)
+# ultralytics==8.2.0
+
+# CNN (TensorFlow or PyTorch)
+# tensorflow==2.16.1
+# torch==2.3.0
+# torchvision==0.18.0
+
+# XGBoost
+xgboost==2.0.3
+scikit-learn==1.5.0
+
+# EasyOCR
+# easyocr==1.7.1      # ~1.8GB download, uncomment when needed
+# Note: EasyOCR requires torch — install separately
+
+# ─── Utilities ──────────────────────────────
+python-dotenv==1.0.1
+httpx==0.27.0
+aiofiles==23.2.1
